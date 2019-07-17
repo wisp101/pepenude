@@ -1,27 +1,35 @@
 <template>
-  <div class="nudity-fu" :class="{'is-dragging': isDraggingFile}" @dragenter="onDragEnter">
-    <div class="dragging-overlay" @dragover="onDragOver" @dragleave="onDragLeave" @drop="onDrop" />
+  <div class="c-nudity-upload">
+    <!-- Dropzone -->
+    <div
+      class="upload-dropzone"
+      :class="{'is-dragging': isDraggingFile}"
+      @dragenter="onDragEnter"
+      @dragover="onDragOver"
+      @dragleave="onDragLeave"
+      @drop="onDrop">
+      <p class="dropzone-hint">👇 Drop the photo here!</p>
+    </div>
 
     <!-- Hidden input -->
     <input
       v-show="false"
       ref="photo"
       type="file"
-      accept="image/jpeg, image/png"
+      accept="image/jpeg, image/png, image/gif"
       @change="onPhotoSelected" />
 
     <!-- Action button -->
     <button class="button" @click.prevent="$refs.photo.click()">
-      Upload a photo...
+      📂 or open a photo...
     </button>
-
-    <p class="fu-hint">you can drag the file here too</p>
   </div>
 </template>
 
 <script>
 import _ from 'lodash'
 import { ModelPhoto } from '~/modules/models'
+import { File } from '~/modules'
 
 export default {
   props: {
@@ -32,22 +40,32 @@ export default {
   },
 
   data: () => ({
+    // Indicates if the user is dragging a file in the window (we apply the drag style)
     isDraggingFile: false
   }),
 
   created() {
-    this.$store.dispatch('nudity/reset')
+    // Restarts the information of a previous process
+    this.$nudity.reset()
   },
 
   methods: {
-    start(file) {
-      if (_.isNil(file)) {
+    /**
+     * File selected, start a new transformation process
+     */
+    start(inputFile) {
+      if (_.isNil(inputFile)) {
         alert('It seems that you have not selected a photo!')
         return
       }
 
-      const modelPhoto = new ModelPhoto(null, file.path, file.type)
+      // New instance of the file
+      const file = File.fromPath(inputFile.path)
 
+      // Create a photo for the model ("null" model for now)
+      const modelPhoto = new ModelPhoto(null, file)
+
+      // Get any error message from the file
       const validationErrorMessage = modelPhoto.getValidationErrorMessage()
 
       if (!_.isNil(validationErrorMessage)) {
@@ -55,8 +73,10 @@ export default {
         return
       }
 
+      // Start the transformation process!
       this.$nudity.start(modelPhoto)
 
+      // It's time to crop the photo
       this.$router.push('/nudity/crop')
     },
 
@@ -107,8 +127,39 @@ export default {
 </script>
 
 <style lang="scss">
-.nudity-fu {
-  @apply flex flex-col justify-center items-center w-full py-20 relative border-4 border-transparent;
+.c-nudity-upload {
+  @apply w-full
+    relative
+    text-center;
+
+  .upload-dropzone {
+    @apply flex
+      items-center
+      justify-center
+      bg-gray-100
+      rounded
+      mx-5
+      border-transparent
+      border
+      border-dashed
+      mb-5;
+
+    height: 150px;
+    transition: all 0.1s linear;
+
+    &.is-dragging {
+      @apply bg-gray-200 border-gray-500;
+
+      .dropzone-hint {
+        @apply opacity-25;
+      }
+    }
+
+    .dropzone-hint {
+      @apply text-gray-500 uppercase;
+      transition: all 0.1s linear;
+    }
+  }
 
   &.is-dragging {
     @apply border-gray-400 border-dotted;

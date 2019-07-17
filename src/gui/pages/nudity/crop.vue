@@ -6,9 +6,14 @@
 
     <div class="crop-help">
       <section>
-        <p class="help-title">Photo cropping</p>
+        <p class="help-title">📷 Photo cropping</p>
+
         <p class="help-text">
-          For the transformation to work it is necessary to resize your photo to 512x512 dimensions, use the tool above and move the photo until the person is right in the middle.
+          It is necessary to resize your photo to 512x512, use the tool above to place the portion of the photo you want to transform into the marked box.
+        </p>
+
+        <p class="help-text">
+          🐭 Move the photo by dragging it with the mouse, you can zoom in or out the photo using the mouse wheel.
         </p>
 
         <div class="buttons">
@@ -18,12 +23,13 @@
       </section>
 
       <section>
-        <p class="help-title">How to obtain better results?</p>
+        <p class="help-title">🕵️‍️ How to obtain better results?</p>
         <p class="help-text">
           <ul>
-            <li>Photos where the person is standing and looking towards the camera.</li>
-            <li>Photos with light clothes. (bikini works better)</li>
-            <li>Try to make the person's face, belly button and legs visible.</li>
+            <li>Only one person should appear in the photo.</li>
+            <li>The person is standing and looking towards the camera.</li>
+            <li>The person wears light clothes. (bikini works better)</li>
+            <li>Try to make the person's belly button and legs visible.</li>
           </ul>
         </p>
       </section>
@@ -39,19 +45,19 @@ export default {
   middleware: 'nudity',
 
   data: () => ({
+    // Instance of CropperJS
     cropper: undefined
   }),
 
   mounted() {
-    this.boot()
+    this.createCropper()
   },
 
   methods: {
-    boot() {
-      this.createCropper()
-    },
-
-    createCropper() {
+    /**
+     *
+     */
+    async createCropper() {
       this.cropper = new Cropper(this.$refs.photoCanvas, {
         viewMode: 0,
         dragMode: 'move',
@@ -60,29 +66,51 @@ export default {
         toggleDragModeOnDblclick: false,
         minCropBoxWidth: 512,
         minCropBoxHeight: 512,
+        maxCropBoxWidth: 512,
+        maxCropBoxHeight: 512,
+        aspectRatio: 1,
         modal: true,
         guides: false,
         highlight: false,
         autoCropArea: 0.1
       })
 
-      this.cropper.replace(this.$nudity.modelPhoto.getSourceAsDataURL())
+      const dataURL = await this.$nudity.modelPhoto
+        .getSourceFile()
+        .readAsDataURL()
+
+      this.cropper.replace(dataURL)
     },
 
-    saveCroppedPhoto() {
+    /**
+     *
+     */
+    async saveCroppedPhoto() {
+      /*
+      const data = this.cropper.getCanvasData()
+      console.log(data)
+      */
+
       const canvas = this.cropper.getCroppedCanvas({
         width: 512,
         height: 512,
-        fillColor: 'black',
+        minWidth: 512,
+        minHeight: 512,
+        maxWidth: 512,
+        maxHeight: 512,
+        fillColor: 'transparent',
         imageSmoothingEnabled: true,
         imageSmoothingQuality: 'high'
       })
 
       const canvasAsDataURL = canvas.toDataURL(
-        this.$nudity.modelPhoto.getSourceType()
+        this.$nudity.modelPhoto.getSourceFile().getMimetype(),
+        1
       )
 
-      this.$nudity.modelPhoto.saveCroppedPhoto(canvasAsDataURL)
+      await this.$nudity.modelPhoto
+        .getCroppedFile()
+        .writeDataURL(canvasAsDataURL)
 
       this.$router.push('/nudity/settings')
     },
@@ -114,7 +142,7 @@ export default {
     }
 
     .help-text {
-      @apply text-sm text-gray-800;
+      @apply text-sm text-gray-800 mb-3;
 
       ul {
         @apply list-disc ml-5;

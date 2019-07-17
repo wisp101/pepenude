@@ -15,24 +15,37 @@ export default {
     height: {
       type: Number,
       default: 312
+    },
+
+    type: {
+      type: String,
+      default: 'output'
     }
   },
 
-  computed: {
-    nudityPreview() {
+  data: () => ({
+    nudityPreview: undefined
+  }),
+
+  async created() {
+    this.nudityPreview = await this.getPreviewDataURL()
+  },
+
+  methods: {
+    async getPreviewDataURL() {
       if (!this.$nudity.hasModelPhoto()) {
         return require('~/assets/images/d1hpv9d-e1c2c577-d272-41b0-bd73-a89209108efd.jpg')
       }
 
-      if (this.$nudity.modelPhoto.hasOutputPhoto()) {
-        return this.$nudity.modelPhoto.getOutputAsDataURL()
+      if (this.type === 'output') {
+        return this.$nudity.modelPhoto.getOutputFile().readAsDataURL()
       }
 
-      if (this.$nudity.modelPhoto.hasCroppedPhoto()) {
-        return this.$nudity.modelPhoto.getCroppedAsDataURL()
+      if (this.type === 'cropped') {
+        return this.$nudity.modelPhoto.getCroppedFile().readAsDataURL()
       }
 
-      return this.$nudity.modelPhoto.getSourceAsDataURL()
+      return this.$nudity.modelPhoto.getSourceFile().readAsDataURL()
     }
   }
 }
